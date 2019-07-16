@@ -1,62 +1,81 @@
-const rp = require("request-promise"), //进入request-promise模块
-  fs = require("fs"), //进入fs模块
-  cheerio = require("cheerio"), //进入cheerio模块
-  depositPath = "E:/node/wechat/img"; //存放照片的地址
-let downloadPath; //下载图片的文件夹地址
-module.exports = {
-  async getPage(url) {
-    const data = {
-      url,
-      res: await rp({
-        url: url
-      })
-    };
-    return data;
+const rp = require("request-promise")
+const cheerio = require('cheerio')
+const depositPath = "E:/node/baiduNews/img/";
+const fs =require('fs')
+let existsFile = false;
+let downLoadPath;
+module.exports ={
+  async getPage(url){
+    try {
+      const data ={
+        url:url,
+        res:await rp({
+          url:url
+        })
+      }
+      return data
+    } catch (error) {
+      return {}
+    }
+
   },
-  getUrl(data) {
+  async getPageDetail(url){
+    let data={};
+    return  data.res = await rp(url)
+  },
+  getUrl(data){
     let list = [];
-    const $ = cheerio.load(data.res); //将html转换为可操作的节点
-    $("#pins li a")
+    try {
+      const $ = cheerio.load(data.res);
+
+      $("#pins li a")
       .children()
-      .each(async (i, e) => {
+      .each(async(i,e)=>{
         let obj = {
           name: e.attribs.alt, //图片网页的名字，后面作为文件夹名字
           url: e.parent.attribs.href //图片网页的url
-        };
-        list.push(obj); //输出目录页查询出来的所有链接地址
-      });
-    
+        }
+        list.push(obj)
+      })
+    } catch (error) {
+      
+    }
+    return list;
   },
-  getTitle(obj) {
+  getTitle(obj){
     downloadPath = depositPath + obj.name;
-    if (!fs.existsSync(downloadPath)) {//查看是否存在这个文件夹
-      fs.mkdirSync(downloadPath);//不存在就建文件夹
+    if(!fs.existsSync(downloadPath)){
       console.log(`${obj.name}文件夹创建成功`);
+      // fs.mkdirSync(downloadPath)
       return true;
-    } else {
+    }else{
       console.log(`${obj.name}文件夹已经存在`);
       return false;
     }
   },
-  getImagesNum(res, name) {
-    if (res) {
+  getImagesNum(res,name){
+    // console.log(res)
+    if(res){
       let $ = cheerio.load(res);
-      let len = $(".pagenavi")
-        .find("a")
-        .find("span").length;
+      // console.log($)
+      let len = $(".main .pagenavi").find("a").eq(-2).find('span').html();
+      // console.log($(".main .pagenavi").find("a"))
+      console.log(len)
+      // console.log(len)
       if (len == 0) {
         fs.rmdirSync(`${depositPath}${name}`);//删除无法下载的文件夹
         return 0;
       }
-      let pageIndex = $(".pagenavi")
-        .find("a")
-        .find("span")[len - 2].children[0].data;
-      return pageIndex;//返回图片总数
+      // let pageIndex = $(".pagenavi")
+      //   .find("a")
+      //   .find("span")[len - 2].children[0].data;
+      return len*1;//返回图片总数
     }
   },
   //下载相册照片
   async downloadImage(data, index) {
     if (data.res) {
+      console.log('imagess')
       var $ = cheerio.load(data.res);
       if ($(".main-image").find("img")[0]) {
         let imgSrc = $(".main-image").find("img")[0].attribs.src;//图片地址
@@ -72,15 +91,15 @@ module.exports = {
           "Upgrade-Insecure-Requests": 1,
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.19 Safari/537.36"
         };//反防盗链
-        await rp({
-          url: imgSrc,
-          resolveWithFullResponse: true,
-          headers
-        }).pipe(fs.createWriteStream(`${downloadPath}/${index}.jpg`));//下载
+        // await rp({
+        //   url: imgSrc,
+        //   resolveWithFullResponse: true,
+        //   headers
+        // }).pipe(fs.createWriteStream(`${downloadPath}/${index}.jpg`));//下载
         console.log(`${downloadPath}/${index}.jpg下载成功`);
       } else {
         console.log(`${downloadPath}/${index}.jpg加载失败`);
       }
     }
   }
-};
+}

@@ -1,9 +1,8 @@
-const basicPath = "https://www.mzitu.com/japan/";
+const basicPath = "https://www.mzitu.com/xinggan";
 // https://www.mzitu.com/page/2/
 let start = 1;
-let end =5;
+let end =3;
 const render = require("./render");
-console.log(render)
 const main = async (url)=>{
   let list = [],index=0;
   let data = await render.getPage(url)
@@ -11,7 +10,7 @@ const main = async (url)=>{
   downLoadImages(list, index);//下载
 }
 
-function downLoadImages(list,index){
+const downLoadImages=async(list,index)=>{
   if (index == list.length) {
     console.log('list-length')
     start++;
@@ -23,28 +22,37 @@ function downLoadImages(list,index){
 
   if (render.getTitle(list[index])) {
     console.log(list[index].url)
-    let item =  render.getPageDetail(list[index].url);//获取图片所在网页的url
-    console.log(item);
-    render.getPageDetail(list[index].url).then(res=>{
-      let imageNum = render.getImagesNum(res,list[index].name);//获取这组图片的数量
-      console.log(imageNum)
-      for (var i = 1; i <= imageNum; i++) {
-        let page = await render.getPage(list[index].url + `/${i}`);//遍历获取这组图片每一张所在的网页
+    let item = await render.getPage(list[index].url);
+    conaole.log('26--------------------')
+    console.log(item)
+    let imageNum = render.getImagesNum(item.res,list[index].name);//获取这组图片的数量
+    console.log('29---------'+ imageNum)
+    for (var i = 1; i <= imageNum; i++) {
+      // console.log(list[index].url + `/${i}`)
+        let url='';
+        if(i!=1){
+          url = list[index].url + `/${i}`
+        }else{
+          url = list[index].url
+        }
+        console.log('38 ---------' + url)
+      try {
+        let page = await render.getPage(url);//遍历获取这组图片每一张所在的网页
+        // console.log(page)
+        console.log(url +' scuess')
         await render.downloadImage(page, i);//下载
+      } catch (error) {
+        console.log('error error')
+        // console.log(error)
+        console.log(url)
+        // continue
       }
-    })
-    // let data = await render.getPage(basicPath)
-    // let item = await render.getPage(basicPath);
-    // let imageNum = render.getImagesNum(item.res,list[index].name);//获取这组图片的数量
-    // for (var i = 1; i <= imageNum; i++) {
-    //   let page = await render.getPage(list[index].url + `/${i}`);//遍历获取这组图片每一张所在的网页
-    //   await render.downloadImage(page, i);//下载
-    // }
-    // index++;
-    // downLoadImages(list, index);//循环完成下载下一组
-  // }else{
-  //   index++;
-  //   downLoadImages(list, index);//下载下一组
+    }
+    index++;
+    downLoadImages(list, index);//循环完成下载下一组
+  }else{
+    index++;
+    downLoadImages(list, index);//下载下一组
   }
 }
 main(basicPath)
